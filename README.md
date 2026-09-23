@@ -57,7 +57,7 @@ python3 -m venv .venv
 pip install -r requirements.txt
 cp .env.example .env
 alembic upgrade head
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8011
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8006
 python -m pytest tests -q
 python -m app.health_cli
 python -m app.health_cli --readiness

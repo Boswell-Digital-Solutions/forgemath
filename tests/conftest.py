@@ -18,7 +18,7 @@ TEST_DB_PATH = Path(tempfile.gettempdir()) / "forgemath-test.sqlite3"
 SQLALCHEMY_TEST_DATABASE_URL = f"sqlite:///{TEST_DB_PATH}"
 os.environ.setdefault("FORGEMATH_DATABASE_URL", SQLALCHEMY_TEST_DATABASE_URL)
 os.environ.setdefault("FORGEMATH_HOST", "127.0.0.1")
-os.environ.setdefault("FORGEMATH_PORT", "8011")
+os.environ.setdefault("FORGEMATH_PORT", "8006")
 
 from app.config import validate_config
 from app.database import Base, get_db, get_session_factory

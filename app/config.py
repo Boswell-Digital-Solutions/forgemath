@@ -8,7 +8,7 @@ SERVICE_NAME = "ForgeMath"
 SERVICE_VERSION = "0.1.0"
 DATABASE_URL = os.getenv("FORGEMATH_DATABASE_URL", "sqlite:///./forgemath.db")
 HOST = os.getenv("FORGEMATH_HOST", "127.0.0.1")
-_PORT_VALUE = os.getenv("FORGEMATH_PORT", "8011")
+_PORT_VALUE = os.getenv("FORGEMATH_PORT", "8006")
 try:
     PORT = int(_PORT_VALUE)
 except ValueError:
