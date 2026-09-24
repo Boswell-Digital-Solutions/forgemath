@@ -721,7 +721,7 @@ instructions. Merge and deployment require separate authority.
 |---------|------|---------|---------|
 | `FORGEMATH_DATABASE_URL` | string | `sqlite:///./forgemath.db` | `app/config.py`, `app/database.py`, `alembic/env.py` |
 | `FORGEMATH_HOST` | string | `127.0.0.1` | `app/config.py` |
-| `FORGEMATH_PORT` | integer | `8011` | `app/config.py` |
+| `FORGEMATH_PORT` | integer | `8006` | `app/config.py` |
 | `FORGEMATH_LINEAGE_URL` | URL | unset (disabled) | `app/lineage/spine_emit.py`, readiness configuration check |
 | `FORGEMATH_LINEAGE_TOKEN` | string | unset | `app/lineage/spine_emit.py`, readiness configuration check |
 
