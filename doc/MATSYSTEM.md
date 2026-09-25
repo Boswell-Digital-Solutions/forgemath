@@ -25,28 +25,28 @@ qualification results and must name their date and reproduction command.
 
 | Part | File | Contents |
 | --- | --- | --- |
-| §1 | `00_overview/00-overview.md` | Overview |
-| §2 | `00_overview/01-architecture.md` | Architecture |
-| §3 | `00_overview/01-overview-philosophy.md` | 1. Overview & Philosophy |
-| §4 | `00_overview/02-architecture.md` | 2. Architecture |
-| §5 | `00_overview/04-project-structure.md` | 4. Project Structure |
-| §6 | `10_service-contract/08-api-layer.md` | 8. API Layer |
-| §7 | `10_service-contract/10-ecosystem-integration.md` | 10. Ecosystem Integration |
-| §8 | `20_runtime/07-frontend.md` | 7. Frontend |
-| §9 | `20_runtime/09-backend.md` | 9. Backend |
-| §10 | `20_runtime/11-database-schema.md` | 11. Database Schema |
-| §11 | `20_runtime/12-ai-integration.md` | 12. AI Integration |
-| §12 | `20_runtime/13-error-handling.md` | 13. Error Handling Contract |
-| §13 | `30_dependencies/03-tech-stack.md` | 3. Tech Stack |
-| §14 | `30_dependencies/06-design-system.md` | 6. Design System |
-| §15 | `40_governance/10-scope.md` | Scope |
-| §16 | `40_governance/30-governance.md` | Governance |
-| §17 | `40_governance/40-change-control.md` | Change Control |
-| §18 | `50_operations/05-configuration.md` | 5. Configuration & Environment |
-| §19 | `50_operations/14-testing-infrastructure.md` | 14. Testing Infrastructure |
-| §20 | `50_operations/15-handover-migration-notes.md` | 15. Handover / Migration Notes |
-| §21 | `99_appendices/20-structure.md` | Structure |
-| §22 | `99_appendices/90-appendices.md` | Appendices |
+| §1 | `00-overview.md` | Overview |
+| §2 | `01-architecture.md` | Architecture |
+| §3 | `01-overview-philosophy.md` | 1. Overview & Philosophy |
+| §4 | `02-architecture.md` | 2. Architecture |
+| §5 | `04-project-structure.md` | 4. Project Structure |
+| §6 | `08-api-layer.md` | 8. API Layer |
+| §7 | `10-ecosystem-integration.md` | 10. Ecosystem Integration |
+| §8 | `07-frontend.md` | 7. Frontend |
+| §9 | `09-backend.md` | 9. Backend |
+| §10 | `11-database-schema.md` | 11. Database Schema |
+| §11 | `12-ai-integration.md` | 12. AI Integration |
+| §12 | `13-error-handling.md` | 13. Error Handling Contract |
+| §13 | `03-tech-stack.md` | 3. Tech Stack |
+| §14 | `06-design-system.md` | 6. Design System |
+| §15 | `10-scope.md` | Scope |
+| §16 | `30-governance.md` | Governance |
+| §17 | `40-change-control.md` | Change Control |
+| §18 | `05-configuration.md` | 5. Configuration & Environment |
+| §19 | `14-testing-infrastructure.md` | 14. Testing Infrastructure |
+| §20 | `15-handover-migration-notes.md` | 15. Handover / Migration Notes |
+| §21 | `20-structure.md` | Structure |
+| §22 | `90-appendices.md` | Appendices |
 
 ## Quick Assembly
 
@@ -186,6 +186,37 @@ Client
 
 ---
 
+## 3. Tech Stack
+
+### 3.1 Runtime Dependencies
+
+| Layer | Dependency | Version |
+|------|------------|---------|
+| API | FastAPI | `0.109.0` |
+| ASGI server | Uvicorn | `0.27.0` |
+| ORM | SQLAlchemy | `2.0.36` |
+| Migrations | Alembic | `1.13.1` |
+| Validation | Pydantic | `>=2.10.0` |
+| Database driver | psycopg2-binary | `2.9.10` |
+| Environment loading | python-dotenv | `1.0.0` |
+
+### 3.2 Test Dependencies
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| pytest | `7.4.3` | Repo test runner |
+| Hypothesis | `6.165.9` | Property-based and stateful invariant generation |
+| httpx | `0.27.2` | FastAPI-compatible request tooling and dependency surface |
+| jsonschema | `>=4.23.0,<5` | Evaluation Spine and research-contract JSON Schema validation |
+
+`pydantic` and `jsonschema` use bounded ranges rather than exact full-lock
+resolution. CI's clean dependency installation tests the resolved set, but a
+reproducible lock or constraints-file decision remains a separate dependency
+governance follow-up.
+
+
+---
+
 ## 4. Project Structure
 
 ### 4.1 Directory Map
@@ -219,6 +250,70 @@ ForgeMath/
 | `doc/system/*.md` | Modular SYSTEM source files |
 | `docs/*.md` | Architecture, roadmap, and module specs |
 
+
+---
+
+## 5. Configuration & Environment
+
+### 5.1 Environment Variables
+
+| Variable | Type | Default | Read by |
+|---------|------|---------|---------|
+| `FORGEMATH_DATABASE_URL` | string | `sqlite:///./forgemath.db` | `app/config.py`, `app/database.py`, `alembic/env.py` |
+| `FORGEMATH_HOST` | string | `127.0.0.1` | `app/config.py` |
+| `FORGEMATH_PORT` | integer | `8006` | `app/config.py` |
+| `FORGEMATH_LINEAGE_URL` | URL | unset (disabled) | `app/lineage/spine_emit.py`, readiness configuration check |
+| `FORGEMATH_LINEAGE_TOKEN` | string | unset | `app/lineage/spine_emit.py`, readiness configuration check |
+
+### 5.2 Validation Rules
+
+- database URL must not be empty
+- host must not be empty
+- port must be between `1` and `65535`
+- a configured lineage URL must be an absolute HTTP(S) URL
+- a lineage token without a lineage URL is a degraded configuration
+
+### 5.3 Health Modes
+
+- `python -m app.health_cli` checks only Evaluation Spine authority and contract
+  imports. Database, migrations, FastAPI construction, lane registration, and
+  lineage transport are explicitly reported as not checked.
+- `python -m app.health_cli --readiness` validates configuration, connects to an
+  existing configured database, compares its Alembic revision with repository
+  heads, constructs FastAPI, verifies the exact supported lane set, and checks
+  optional lineage URL and SDK availability when enabled. It never creates a database, applies a
+  migration, sends lineage, mutates truth, or contacts an unconfigured service.
+
+
+---
+
+## 6. Design System
+
+ForgeMath currently has no end-user UI inside this repo.
+The repository remains backend-only, so the design system surface is limited
+to JSON contracts, naming consistency, and documentation clarity.
+
+### 6.1 Current UI Posture
+
+| Surface | Status |
+|--------|--------|
+| In-repo frontend | Not implemented |
+| Operator API responses | Implemented as JSON read DTOs |
+| External UI consumers | Deferred to downstream services |
+
+---
+
+## 7. Frontend
+
+No frontend implementation exists in the current repository state. Operator
+interaction is through documentation, migrations, HTTP routes, and CLI
+contracts.
+
+### 7.1 Deferred Frontend Work
+
+- no SPA or Tauri client
+- no projection dashboard
+- no route-local visualization of lane outputs
 
 ---
 
@@ -312,55 +407,6 @@ non-deterministic, or retired.
 
 ---
 
-## 10. Ecosystem Integration
-
-ForgeMath keeps its canonical math locally owned while exposing explicit,
-bounded integration surfaces. Optional integration is not equivalent to no
-integration: the Evaluation Spine file evaluation remains usable when lineage
-is disabled or unavailable.
-
-### 10.1 Current Integration State
-
-| Service | Current relationship | Notes |
-|--------|----------------------|-------|
-| DataForge-Local | Optional ForgeLineage destination | When `FORGEMATH_LINEAGE_URL` is set, the Evaluation Spine flow emits ForgeMath-owned evaluation/output nodes and an optional consumed edge; default-off and non-blocking |
-| Forge_Command | Health and artifact consumer | Invokes `python -m app.health_cli`; its gate walk may resolve the rich output contract artifact referenced by lineage |
-| ForgeLineage | Pinned SDK contract | CI checks out a fixed SDK revision for lineage tests; the transport is never contacted by readiness |
-| NeuroForge | None | No runtime AI inference path in this repository |
-
-### 10.2 Evaluation Spine Boundary
-
-`python -m app.evaluation_spine_cli` is a deterministic file-in/file-out
-authority. It consumes an eval-calibration report and writes a ForgeMath lane
-evaluation reference contract. This is distinct from the FastAPI bounded
-execution service and does not add a fourth registered API execution lane.
-
-The emitted `forgemath_output` node remains identity-only. The rich evaluation
-result and `proposal_candidate_allowed` gate live in the referenced contract
-artifact for Forge_Command to resolve.
-
-### 10.3 Governance Inputs
-
-The repo is grounded by external governing docs, but those documents are not
-runtime dependencies. They are operator and design inputs.
-
-
----
-
-## 7. Frontend
-
-No frontend implementation exists in the current repository state. Operator
-interaction is through documentation, migrations, HTTP routes, and CLI
-contracts.
-
-### 7.1 Deferred Frontend Work
-
-- no SPA or Tauri client
-- no projection dashboard
-- no route-local visualization of lane outputs
-
----
-
 ## 9. Backend
 
 ### 9.1 Service Responsibilities
@@ -424,6 +470,55 @@ contracts.
 - Evaluation Spine lineage emission (`app/lineage/spine_emit.py`, on `evaluate_calibration_report_file`) is **opt-in and non-blocking**: it emits only when `FORGEMATH_LINEAGE_URL` is set, and any emission failure is logged while the evaluation still completes. It emits only ForgeMath's own lineage (`forgemath_evaluation`/`forgemath_output` + a `consumed` edge to the discovered upstream `eval_cal_record`); the `non_recalculation` posture of the output payload is unchanged — no downstream recomputation of upstream authority
 - The **`forgemath_output` lineage node payload is identity-only** (the canonical `forgemath_output.v1` schema is `additionalProperties:false`: `output_id`/`lane_evaluation_id`/`payload_hash`/`produced_at`/`schema_version`). The rich evaluation result — **including the `proposal_candidate_allowed` gate** — lives in the output **contract artifact**, referenced from the node via `artifact_ref` (`ArtifactRef.v1`: `artifact_id` = the contract path, `payload_hash` = its sha256). A downstream consumer (ForgeCommand's gate-walk) resolves the gate **from the artifact**, never from the node payload — keeping lineage nodes as pure identity and decisions in artifacts
 - arbitrary caller-supplied expressions are never evaluated; supported math remains defined by typed governed contracts and repository code
+
+---
+
+## 10. Ecosystem Integration
+
+ForgeMath keeps its canonical math locally owned while exposing explicit,
+bounded integration surfaces. Optional integration is not equivalent to no
+integration: the Evaluation Spine file evaluation remains usable when lineage
+is disabled or unavailable.
+
+### 10.1 Current Integration State
+
+| Service | Current relationship | Notes |
+|--------|----------------------|-------|
+| DataForge-Local | Optional ForgeLineage destination | When `FORGEMATH_LINEAGE_URL` is set, the Evaluation Spine flow emits ForgeMath-owned evaluation/output nodes and an optional consumed edge; default-off and non-blocking |
+| Forge_Command | Health and artifact consumer | Invokes `python -m app.health_cli`; its gate walk may resolve the rich output contract artifact referenced by lineage |
+| ForgeLineage | Pinned SDK contract | CI checks out a fixed SDK revision for lineage tests; the transport is never contacted by readiness |
+| NeuroForge | None | No runtime AI inference path in this repository |
+
+### 10.2 Evaluation Spine Boundary
+
+`python -m app.evaluation_spine_cli` is a deterministic file-in/file-out
+authority. It consumes an eval-calibration report and writes a ForgeMath lane
+evaluation reference contract. This is distinct from the FastAPI bounded
+execution service and does not add a fourth registered API execution lane.
+
+The emitted `forgemath_output` node remains identity-only. The rich evaluation
+result and `proposal_candidate_allowed` gate live in the referenced contract
+artifact for Forge_Command to resolve.
+
+### 10.3 Governance Inputs
+
+The repo is grounded by external governing docs, but those documents are not
+runtime dependencies. They are operator and design inputs.
+
+
+---
+
+# Scope
+
+In scope are the ForgeMath-owned governance registries, canonical evaluation
+records, lifecycle and runtime-admission evidence, read projections, bounded
+execution for the five registered lanes, the Evaluation Spine CLI contract,
+and ForgeMath-owned lineage emission.
+
+Out of scope are arbitrary expression execution, new lanes without separate
+governance approval, changes to canonical formulas or numerical semantics,
+downstream recomputation of upstream authority, deployment, external-service
+configuration, and changes to DataForge-Local or Forge_Command.
 
 ---
 
@@ -600,153 +695,6 @@ No route silently degrades a missing or incompatible binding into a success path
 
 ---
 
-## 3. Tech Stack
-
-### 3.1 Runtime Dependencies
-
-| Layer | Dependency | Version |
-|------|------------|---------|
-| API | FastAPI | `0.109.0` |
-| ASGI server | Uvicorn | `0.27.0` |
-| ORM | SQLAlchemy | `2.0.36` |
-| Migrations | Alembic | `1.13.1` |
-| Validation | Pydantic | `>=2.10.0` |
-| Database driver | psycopg2-binary | `2.9.10` |
-| Environment loading | python-dotenv | `1.0.0` |
-
-### 3.2 Test Dependencies
-
-| Tool | Version | Purpose |
-|------|---------|---------|
-| pytest | `7.4.3` | Repo test runner |
-| Hypothesis | `6.165.9` | Property-based and stateful invariant generation |
-| httpx | `0.27.2` | FastAPI-compatible request tooling and dependency surface |
-| jsonschema | `>=4.23.0,<5` | Evaluation Spine and research-contract JSON Schema validation |
-
-`pydantic` and `jsonschema` use bounded ranges rather than exact full-lock
-resolution. CI's clean dependency installation tests the resolved set, but a
-reproducible lock or constraints-file decision remains a separate dependency
-governance follow-up.
-
-
----
-
-## 6. Design System
-
-ForgeMath currently has no end-user UI inside this repo.
-The repository remains backend-only, so the design system surface is limited
-to JSON contracts, naming consistency, and documentation clarity.
-
-### 6.1 Current UI Posture
-
-| Surface | Status |
-|--------|--------|
-| In-repo frontend | Not implemented |
-| Operator API responses | Implemented as JSON read DTOs |
-| External UI consumers | Deferred to downstream services |
-
----
-
-# Scope
-
-In scope are the ForgeMath-owned governance registries, canonical evaluation
-records, lifecycle and runtime-admission evidence, read projections, bounded
-execution for the five registered lanes, the Evaluation Spine CLI contract,
-and ForgeMath-owned lineage emission.
-
-Out of scope are arbitrary expression execution, new lanes without separate
-governance approval, changes to canonical formulas or numerical semantics,
-downstream recomputation of upstream authority, deployment, external-service
-configuration, and changes to DataForge-Local or Forge_Command.
-
----
-
-# Governance
-
-Governed payload truth is append-only and versioned. Supersession closes prior
-truth while preserving history; only explicit lifecycle fields may change in
-place. Missing or incompatible bindings, retired or non-deterministic runtime
-profiles, and cross-lane relationships fail closed.
-
-Computed canonical truth enters through the governed execution service.
-Manual evaluation ingest is limited to non-computed historical or audit
-records. Projections remain derived read models and never become source truth.
-
-Formula, weight, threshold, rounding, quantization, and supported-lane changes
-require explicit mathematical governance and updated golden evidence. Caller-
-supplied expressions are prohibited.
-
-## Research contract boundary
-
-`contracts/research/` contains strict JSON Schema 2020-12 research artifacts
-for `MathDecisionReceipt.v1`, `EquationPackageManifest.v1`, and
-`SignedEquationPackageResearch.v1`. They model content-addressed decision
-evidence, governed package contents, provenance, redaction posture, signature
-claims, and verification policy. They are not imported by `app/`, exposed by
-an API, persisted in canonical tables, or used to activate executable math.
-
-The schemas fail closed to the five registered lanes, canonical decimal strings,
-complete governed artifact roles, `executable=false`, and
-`arbitrary_expression_allowed=false`. The signature fixture is explicitly
-unverified. Runtime adoption requires separate governance for canonical JSON,
-real cryptographic verification, key trust and rotation, revocation, threshold
-enforcement, storage, lifecycle, approval, and migrations.
-
-The research mapping uses W3C PROV entity/activity/agent concepts, separates
-build definition from run details following SLSA provenance v1.2, and requires
-per-artifact digests following signed-bundle verification practice. These are
-interoperability influences, not conformance claims.
-
----
-
-# Change Control
-
-Changes must remain bounded, preserve fail-closed authority, and update code,
-contracts, tests, migrations, and canonical documentation together when those
-surfaces are affected. Applied Alembic migrations are immutable; schema changes
-receive a new migration.
-
-A pull request records compatibility impact, migration and complete-suite
-evidence, health output, documentation assembly and drift evidence, confirmed
-mathematical-semantics posture, deferred external operations, and rollback
-instructions. Merge and deployment require separate authority.
-
----
-
-## 5. Configuration & Environment
-
-### 5.1 Environment Variables
-
-| Variable | Type | Default | Read by |
-|---------|------|---------|---------|
-| `FORGEMATH_DATABASE_URL` | string | `sqlite:///./forgemath.db` | `app/config.py`, `app/database.py`, `alembic/env.py` |
-| `FORGEMATH_HOST` | string | `127.0.0.1` | `app/config.py` |
-| `FORGEMATH_PORT` | integer | `8006` | `app/config.py` |
-| `FORGEMATH_LINEAGE_URL` | URL | unset (disabled) | `app/lineage/spine_emit.py`, readiness configuration check |
-| `FORGEMATH_LINEAGE_TOKEN` | string | unset | `app/lineage/spine_emit.py`, readiness configuration check |
-
-### 5.2 Validation Rules
-
-- database URL must not be empty
-- host must not be empty
-- port must be between `1` and `65535`
-- a configured lineage URL must be an absolute HTTP(S) URL
-- a lineage token without a lineage URL is a degraded configuration
-
-### 5.3 Health Modes
-
-- `python -m app.health_cli` checks only Evaluation Spine authority and contract
-  imports. Database, migrations, FastAPI construction, lane registration, and
-  lineage transport are explicitly reported as not checked.
-- `python -m app.health_cli --readiness` validates configuration, connects to an
-  existing configured database, compares its Alembic revision with repository
-  heads, constructs FastAPI, verifies the exact supported lane set, and checks
-  optional lineage URL and SDK availability when enabled. It never creates a database, applies a
-  migration, sends lineage, mutates truth, or contacts an unconfigured service.
-
-
----
-
 ## 14. Testing Infrastructure
 
 ### 14.1 Current Test Coverage
@@ -892,6 +840,58 @@ generated review artifact and must have no hand-authored drift.
 Root `AGENTS.md` defines repository working rules. `CLAUDE.md` is a concise
 agent-specific companion, `README.md` is an operator entry point, and `docs/`
 contains design references or historical context.
+
+---
+
+# Governance
+
+Governed payload truth is append-only and versioned. Supersession closes prior
+truth while preserving history; only explicit lifecycle fields may change in
+place. Missing or incompatible bindings, retired or non-deterministic runtime
+profiles, and cross-lane relationships fail closed.
+
+Computed canonical truth enters through the governed execution service.
+Manual evaluation ingest is limited to non-computed historical or audit
+records. Projections remain derived read models and never become source truth.
+
+Formula, weight, threshold, rounding, quantization, and supported-lane changes
+require explicit mathematical governance and updated golden evidence. Caller-
+supplied expressions are prohibited.
+
+## Research contract boundary
+
+`contracts/research/` contains strict JSON Schema 2020-12 research artifacts
+for `MathDecisionReceipt.v1`, `EquationPackageManifest.v1`, and
+`SignedEquationPackageResearch.v1`. They model content-addressed decision
+evidence, governed package contents, provenance, redaction posture, signature
+claims, and verification policy. They are not imported by `app/`, exposed by
+an API, persisted in canonical tables, or used to activate executable math.
+
+The schemas fail closed to the five registered lanes, canonical decimal strings,
+complete governed artifact roles, `executable=false`, and
+`arbitrary_expression_allowed=false`. The signature fixture is explicitly
+unverified. Runtime adoption requires separate governance for canonical JSON,
+real cryptographic verification, key trust and rotation, revocation, threshold
+enforcement, storage, lifecycle, approval, and migrations.
+
+The research mapping uses W3C PROV entity/activity/agent concepts, separates
+build definition from run details following SLSA provenance v1.2, and requires
+per-artifact digests following signed-bundle verification practice. These are
+interoperability influences, not conformance claims.
+
+---
+
+# Change Control
+
+Changes must remain bounded, preserve fail-closed authority, and update code,
+contracts, tests, migrations, and canonical documentation together when those
+surfaces are affected. Applied Alembic migrations are immutable; schema changes
+receive a new migration.
+
+A pull request records compatibility impact, migration and complete-suite
+evidence, health output, documentation assembly and drift evidence, confirmed
+mathematical-semantics posture, deferred external operations, and rollback
+instructions. Merge and deployment require separate authority.
 
 ---
 
