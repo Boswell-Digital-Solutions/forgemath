@@ -84,3 +84,37 @@ other test failure.
 Exact pass counts are qualification evidence, not canonical facts. Reproduce
 the current inventory with the complete command above; PRs record the observed
 result and environment at review time instead of preserving stale counts here.
+
+### 14.4 Which CI runs for which change
+
+A change that touches only documentation runs the Documentation CI and no code CI.
+A change that touches any other file runs the code CI.
+A change that touches both runs both.
+If the scope is unknown, the code CI runs.
+
+The code CI is `.github/workflows/ci.yml`.
+It has a workflow-level `paths-ignore` filter on `push` and `pull_request`.
+The filter ignores `docs/**`, `doc/**` and `**/*.md`.
+A change to `.github/workflows/**` is code and runs the code CI.
+The code CI keeps its own step that builds and checks `doc/MATSYSTEM.md`.
+That step runs on every code change.
+
+No re-include exists.
+No source file, migration or test reads a documentation file from the repository.
+The tests read `contracts/research/*.json` and `alembic/` only.
+`contracts/research/README.md` is read by no code.
+If code starts to read a documentation file, the filter must re-include that path.
+Then the filter must use `paths` with `!` patterns, because `paths-ignore` cannot re-include.
+
+The Documentation CI is `.github/workflows/documentation.yml`.
+It runs on changes to `docs/**`, `doc/**`, `**/*.md` and its own file.
+It runs `bash doc/system/BUILD.sh` and `bash doc/system/validate_snapshots.sh`.
+It fails if `git diff --exit-code -- doc` shows a difference.
+The assembled `doc/MATSYSTEM.md` must be built from its parts and committed.
+
+No scheduled run exists.
+No secret scan or other security scan exists in this repository.
+If a scan is added, it must run on every change, documentation included.
+
+Do not add a required check on a path-filtered workflow.
+A workflow that does not start leaves the check pending, and the pending check blocks the merge.
