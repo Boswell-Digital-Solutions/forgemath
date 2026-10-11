@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from decimal import Decimal, ROUND_HALF_EVEN, getcontext
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,8 @@ from app.contracts.evaluation_spine import (
     validate_eval_calibration_report_payload,
     validate_forgemath_lane_evaluation_ref_payload,
 )
+
+logger = logging.getLogger(__name__)
 
 getcontext().prec = 34
 
@@ -240,18 +243,26 @@ def evaluate_calibration_report_file(input_path: Path, output_dir: Path) -> dict
     lane_ref_payload = build_forgemath_lane_evaluation_ref_payload(report_payload)
     output_path = write_forgemath_lane_evaluation_ref_payload(lane_ref_payload, output_dir)
     # Opt-in, non-blocking lineage emission (default off; the evaluation above is unaffected).
-    from app.lineage.spine_emit import emit_forgemath_lineage
+    # The import is inside the guard on purpose: loading `app.lineage` loads the lineage SDK and
+    # its HTTP client, an optional dependency. A machine without it must still finish this step,
+    # because the output file above is already written and valid
+    # (docs/KNOWN_ISSUES.md, 2026-10-10: the Evaluation Spine CLI fails without httpx).
+    try:
+        from app.lineage.spine_emit import emit_forgemath_lineage
 
-    lineage_outcome = emit_forgemath_lineage(
-        report_payload=report_payload,
-        output_payload=lane_ref_payload,
-        output_artifact_path=str(output_path),
-        # Hash the bytes ACTUALLY written to disk (pretty-printed + trailing newline),
-        # not the compact canonical form — a consumer (FC's self-healing tick)
-        # sha256-verifies the artifact FILE before reading the gate, so a
-        # canonical-vs-file hash mismatch makes the gate read fail closed (no proposal).
-        output_artifact_hash="sha256:" + hashlib.sha256(output_path.read_bytes()).hexdigest(),
-    )
+        lineage_outcome = emit_forgemath_lineage(
+            report_payload=report_payload,
+            output_payload=lane_ref_payload,
+            output_artifact_path=str(output_path),
+            # Hash the bytes ACTUALLY written to disk (pretty-printed + trailing newline),
+            # not the compact canonical form — a consumer (FC's self-healing tick)
+            # sha256-verifies the artifact FILE before reading the gate, so a
+            # canonical-vs-file hash mismatch makes the gate read fail closed (no proposal).
+            output_artifact_hash="sha256:" + hashlib.sha256(output_path.read_bytes()).hexdigest(),
+        )
+    except Exception as exc:  # noqa: BLE001 - lineage is non-blocking by doctrine
+        logger.warning("forgemath lineage skipped; evaluation continues", exc_info=exc)
+        lineage_outcome = "lineage_missing"
     return {
         "artifact_family": "forgemath_lane_evaluation_ref",
         "artifact_version": 1,

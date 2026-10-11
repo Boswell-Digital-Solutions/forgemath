@@ -3,6 +3,8 @@ from __future__ import annotations
 import copy
 import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -175,6 +177,46 @@ def test_phase05_file_runner_writes_valid_lane_evaluation_ref(tmp_path: Path) ->
     assert persisted == result["payload"]
     assert validate_forgemath_lane_evaluation_ref_payload(persisted)["validation_state"] == "passed"
     assert result["trace"]["canonical_confidence_score"] == "1.000000"
+
+
+def test_phase05_file_runner_succeeds_when_the_lineage_transport_cannot_be_imported(
+    tmp_path: Path,
+) -> None:
+    """Lineage is optional. A missing transport dependency must not fail the authority step.
+
+    Run in a fresh interpreter so that no earlier test has already imported the lineage package.
+    `sys.modules[name] = None` makes `import name` raise ImportError, as a machine without
+    `httpx` does. Lineage is off (no URL), so the step must exit 0 and report `lineage_missing`.
+    """
+    report = tmp_path / "eval_calibration_report.contract.json"
+    report.write_text(json.dumps(eval_calibration_report_payload()), encoding="utf-8")
+    out_dir = tmp_path / "out"
+    code = (
+        "import sys, json\n"
+        "sys.modules['httpx'] = None\n"
+        "sys.modules['forge_lineage_sdk'] = None\n"
+        "from pathlib import Path\n"
+        "from app.services.evaluation_spine_authority import evaluate_calibration_report_file_or_raise\n"
+        f"r = evaluate_calibration_report_file_or_raise(Path({str(report)!r}), Path({str(out_dir)!r}))\n"
+        "print(json.dumps({'lineage': r['lineage'], 'allowed': r['payload']['proposal_candidate_allowed']}))\n"
+    )
+    env = {"PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}
+    repo_root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [sys.executable, "-s", "-c", code],
+        cwd=repo_root,
+        env={**env, "PYTHONPATH": str(repo_root)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert result.returncode == 0, result.stderr[-600:]
+    assert json.loads(result.stdout.strip().splitlines()[-1]) == {
+        "lineage": "lineage_missing",
+        "allowed": True,
+    }
+    assert (out_dir / "forgemath_lane_evaluation_ref.contract.json").is_file()
 
 
 def test_phase05_fails_closed_when_required_metric_missing() -> None:
