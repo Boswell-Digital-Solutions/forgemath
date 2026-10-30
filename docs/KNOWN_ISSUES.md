@@ -1,5 +1,15 @@
 # Known issues
 
+## 2026-10-30: `FORGEMATH_HOST` and `FORGEMATH_PORT` do not set the bind address (KI-MAT-20261030-001)
+
+- Classification: documentation drift. This is not a security vulnerability.
+- How it was found: the BDS-XMACH-CALLER-BOUNDARY-001 WP00 inventory (forge PR #325). Re-verified on 2026-10-30 by source reading on `origin/main` `0a808a4`. No service was run.
+- Documentation claim: `doc/system/05-configuration.md:8-9` lists `FORGEMATH_HOST` (default `127.0.0.1`) and `FORGEMATH_PORT` (default `8006`) as environment variables, read by `app/config.py`. It does not say that the service binds to them, and it does not say that it does not. A reader takes them as the bind settings.
+- What is observed: `app/config.py:10-26` reads the two values and `validate_config` checks them (host not empty, port an integer from 1 to 65535). `app/main.py:11-22` calls `validate_config` at startup and does nothing else with them. No in-repo launcher passes them to uvicorn: there is no `__main__` block, Dockerfile, Procfile or script that does. The README command (`README.md:60`) passes `--host 127.0.0.1 --port 8006` as literal values. The bind address is therefore the uvicorn command line, or uvicorn's default (`127.0.0.1:8000`) when no flags are given. A change to `FORGEMATH_PORT` alone does not move the port. The README values equal the defaults today, so the documented default port is reached only by that command.
+- Proposed correction (doc only): in `doc/system/05-configuration.md`, state that `FORGEMATH_HOST` and `FORGEMATH_PORT` are validated only, and that the bind address comes from the uvicorn `--host` and `--port` flags (`README.md:60`). Then run `bash doc/system/BUILD.sh`. A change that makes the service bind to these values is a code change and needs separate authority. This entry does not change `doc/system`.
+- ID note: forgemath has no row in the forge `doc/PREFIX_REGISTRY.md`. This ID uses the repository's own designation `MAT` (`doc/MATSYSTEM.md`).
+- Status: Open — recorded, unresolved until the correction is verified.
+
 ## 2026-10-10: the Evaluation Spine CLI fails without `httpx`, even when lineage is off
 
 - What is wrong: `python -m app.evaluation_spine_cli` exits 1 with "unexpected ForgeMath authority failure" on a machine that has no `httpx`. The command has already written `forgemath_lane_evaluation_ref.contract.json` by then. The output file is valid. The exit code says the step failed.
