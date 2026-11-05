@@ -5,6 +5,10 @@ repository.
 
 Read and follow `AGENTS.md`. Canonical system truth is authored under `doc/system/` and assembled to `doc/MATSYSTEM.md` with `bash doc/system/BUILD.sh`; never hand-edit the generated file.
 
+## Repo Identity
+
+- Default branch: main
+
 ## Boundaries
 
 - Preserve append-only governed payloads and supersession lineage. Only lifecycle fields declared mutable by `app/services/immutability.py` may change after persistence.
