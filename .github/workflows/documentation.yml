@@ -35,7 +35,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Builds doc/MATSYSTEM.md from doc/system/ and validates the snapshots.
+      # Builds doc/matSYSTEM.md from doc/system/ and validates the snapshots.
       - name: Build the system reference
         run: bash doc/system/BUILD.sh
 

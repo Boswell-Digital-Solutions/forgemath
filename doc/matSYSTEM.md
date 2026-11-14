@@ -1,13 +1,13 @@
 # ForgeMath - Compiled System Reference
 
-**Designation:** MAT
+**Designation:** mat
 **Document role:** Canonical compiled technical reference for ForgeMath
 **Source:** `doc/system/`
 **Build command:** `bash doc/system/BUILD.sh`
 **Document version:** 2.1 (2026-08-16) - truth reconciliation and qualification
 **Protocol:** BDS Documentation Protocol v2.0; BDS Repo Documentation System Canonical Compliance Standard
 
-> **Generated artifact warning:** `doc/MATSYSTEM.md` is assembled output. Edit
+> **Generated artifact warning:** `doc/matSYSTEM.md` is assembled output. Edit
 > the source modules under `doc/system/` and rebuild. Hand edits to the
 > compiled artifact are overwritten by the next build.
 
@@ -15,7 +15,7 @@ Assembly contract:
 
 - Command: `bash doc/system/BUILD.sh`
 - Validation: `bash doc/system/validate_snapshots.sh` runs during assembly
-- Primary output: `doc/MATSYSTEM.md`
+- Primary output: `doc/matSYSTEM.md`
 
 This `doc/system/` tree is the canonical source of truth for ForgeMath. It uses
 explicit **truth classes**: canonical facts define repo role, authority
@@ -729,7 +729,7 @@ python -m app.health_cli
 FORGEMATH_DATABASE_URL=sqlite:///./qualification.sqlite3 python -m app.health_cli --readiness
 bash doc/system/BUILD.sh
 bash doc/system/validate_snapshots.sh
-git diff --exit-code -- doc/MATSYSTEM.md
+git diff --exit-code -- doc/matSYSTEM.md
 ```
 
 CI checks out the ForgeLineage SDK at the revision pinned in
@@ -793,7 +793,7 @@ The code CI is `.github/workflows/ci.yml`.
 It has a workflow-level `paths-ignore` filter on `push` and `pull_request`.
 The filter ignores `docs/**`, `doc/**` and `**/*.md`.
 A change to `.github/workflows/**` is code and runs the code CI.
-The code CI keeps its own step that builds and checks `doc/MATSYSTEM.md`.
+The code CI keeps its own step that builds and checks `doc/matSYSTEM.md`.
 That step runs on every code change.
 
 No re-include exists.
@@ -807,7 +807,7 @@ The Documentation CI is `.github/workflows/documentation.yml`.
 It runs on changes to `docs/**`, `doc/**`, `**/*.md` and its own file.
 It runs `bash doc/system/BUILD.sh` and `bash doc/system/validate_snapshots.sh`.
 It fails if `git diff --exit-code -- doc` shows a difference.
-The assembled `doc/MATSYSTEM.md` must be built from its parts and committed.
+The assembled `doc/matSYSTEM.md` must be built from its parts and committed.
 
 No scheduled run exists.
 No secret scan or other security scan exists in this repository.
@@ -868,7 +868,7 @@ not implemented. Current projections are intentional ephemeral read models in
 
 `doc/system/` is the authored modular source tree. `BUILD.sh` concatenates
 `_index.md` and every two-digit chapter in stable path order, validates the
-assembled snapshot, and writes `doc/MATSYSTEM.md`. The assembled document is a
+assembled snapshot, and writes `doc/matSYSTEM.md`. The assembled document is a
 generated review artifact and must have no hand-authored drift.
 
 Root `AGENTS.md` defines repository working rules. `CLAUDE.md` is a concise

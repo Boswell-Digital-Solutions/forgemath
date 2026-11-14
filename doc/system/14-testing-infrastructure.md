@@ -32,7 +32,7 @@ python -m app.health_cli
 FORGEMATH_DATABASE_URL=sqlite:///./qualification.sqlite3 python -m app.health_cli --readiness
 bash doc/system/BUILD.sh
 bash doc/system/validate_snapshots.sh
-git diff --exit-code -- doc/MATSYSTEM.md
+git diff --exit-code -- doc/matSYSTEM.md
 ```
 
 CI checks out the ForgeLineage SDK at the revision pinned in
@@ -96,7 +96,7 @@ The code CI is `.github/workflows/ci.yml`.
 It has a workflow-level `paths-ignore` filter on `push` and `pull_request`.
 The filter ignores `docs/**`, `doc/**` and `**/*.md`.
 A change to `.github/workflows/**` is code and runs the code CI.
-The code CI keeps its own step that builds and checks `doc/MATSYSTEM.md`.
+The code CI keeps its own step that builds and checks `doc/matSYSTEM.md`.
 That step runs on every code change.
 
 No re-include exists.
@@ -110,7 +110,7 @@ The Documentation CI is `.github/workflows/documentation.yml`.
 It runs on changes to `docs/**`, `doc/**`, `**/*.md` and its own file.
 It runs `bash doc/system/BUILD.sh` and `bash doc/system/validate_snapshots.sh`.
 It fails if `git diff --exit-code -- doc` shows a difference.
-The assembled `doc/MATSYSTEM.md` must be built from its parts and committed.
+The assembled `doc/matSYSTEM.md` must be built from its parts and committed.
 
 No scheduled run exists.
 No secret scan or other security scan exists in this repository.

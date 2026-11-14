@@ -1,9 +1,9 @@
-# ForgeMath (MAT) — Claude Code context
+# ForgeMath (mat) — Claude Code context
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this
 repository.
 
-Read and follow `AGENTS.md`. Canonical system truth is authored under `doc/system/` and assembled to `doc/MATSYSTEM.md` with `bash doc/system/BUILD.sh`; never hand-edit the generated file.
+Read and follow `AGENTS.md`. Canonical system truth is authored under `doc/system/` and assembled to `doc/matSYSTEM.md` with `bash doc/system/BUILD.sh`; never hand-edit the generated file.
 
 ## Repo Identity
 
