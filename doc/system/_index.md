@@ -1,13 +1,13 @@
 # ForgeMath - Compiled System Reference
 
-**Designation:** MAT
+**Designation:** mat
 **Document role:** Canonical compiled technical reference for ForgeMath
 **Source:** `doc/system/`
 **Build command:** `bash doc/system/BUILD.sh`
 **Document version:** 2.1 (2026-08-16) - truth reconciliation and qualification
 **Protocol:** BDS Documentation Protocol v2.0; BDS Repo Documentation System Canonical Compliance Standard
 
-> **Generated artifact warning:** `doc/MATSYSTEM.md` is assembled output. Edit
+> **Generated artifact warning:** `doc/matSYSTEM.md` is assembled output. Edit
 > the source modules under `doc/system/` and rebuild. Hand edits to the
 > compiled artifact are overwritten by the next build.
 
@@ -15,7 +15,7 @@ Assembly contract:
 
 - Command: `bash doc/system/BUILD.sh`
 - Validation: `bash doc/system/validate_snapshots.sh` runs during assembly
-- Primary output: `doc/MATSYSTEM.md`
+- Primary output: `doc/matSYSTEM.md`
 
 This `doc/system/` tree is the canonical source of truth for ForgeMath. It uses
 explicit **truth classes**: canonical facts define repo role, authority

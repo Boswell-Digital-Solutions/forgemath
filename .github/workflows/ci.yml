@@ -63,4 +63,4 @@ jobs:
         run: |
           bash doc/system/BUILD.sh
           bash doc/system/validate_snapshots.sh
-          git diff --exit-code -- doc/MATSYSTEM.md
+          git diff --exit-code -- doc/matSYSTEM.md
